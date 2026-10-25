@@ -136,7 +136,7 @@ def frontmatter(lines: list[str]) -> dict:
     return out
 
 def check_refs(f: CtxFile, ignore: set[str]) -> list[Finding]:
-    if "ref-mati" in ignore:
+    if "broken-ref" in ignore:
         return []
     found, seen = [], set()
     for i, line in enumerate(f.lines, 1):
@@ -159,7 +159,7 @@ def check_refs(f: CtxFile, ignore: set[str]) -> list[Finding]:
             if any(c.exists() for c in cands):
                 continue
             level = "error" if ref.startswith(SHIPPED_PREFIX) else "info"
-            found.append(Finding(str(f.path), i, level, "ref-mati",
+            found.append(Finding(str(f.path), i, level, "broken-ref",
                                  f"references `{ref}` which does not exist"))
     return found
 
@@ -173,7 +173,7 @@ def norm_rule(line: str) -> str:
     return s
 
 def check_dupes(files: list[CtxFile], ignore: set[str]) -> list[Finding]:
-    if "duplikat" in ignore:
+    if "duplicate" in ignore:
         return []
     index: dict[str, list[tuple[str, int]]] = {}
     for f in files:
@@ -189,7 +189,7 @@ def check_dupes(files: list[CtxFile], ignore: set[str]) -> list[Finding]:
         paths = {p for p, _ in hits}
         if len(paths) < 2:
             continue
-        out.append(Finding(hits[0][0], hits[0][1], "warn", "duplikat",
+        out.append(Finding(hits[0][0], hits[0][1], "warn", "duplicate",
                            "same rule also in " + ", ".join(
                                f"{p}:{l}" for p, l in hits[1:4])))
     return out
@@ -207,20 +207,20 @@ def git_mtime_days(path: Path) -> int | None:
         return None
 
 def check_stale(f: CtxFile, ignore: set[str], max_days: int) -> list[Finding]:
-    if "basi" in ignore:
+    if "stale" in ignore:
         return []
     d = git_mtime_days(f.path)
     if d is not None and d > max_days:
-        return [Finding(str(f.path), 1, "warn", "basi",
+        return [Finding(str(f.path), 1, "warn", "stale",
                         f"unchanged for {d} days — verify it still matches the code")]
     return []
 
 def check_cost(f: CtxFile, ignore: set[str], budget: int) -> list[Finding]:
-    if "biaya" in ignore:
+    if "cost" in ignore:
         return []
     n = tok(f.text)
     if n > budget:
-        return [Finding(str(f.path), 1, "warn", "biaya",
+        return [Finding(str(f.path), 1, "warn", "cost",
                         f"~{n} tokens loaded every run (budget {budget})")]
     return []
 
@@ -231,13 +231,13 @@ def check_skill(f: CtxFile, ignore: set[str]) -> list[Finding]:
         out.append(Finding(str(f.path), ln, "error", "pruned",
                            "[SKILL_PRUNED] placeholder — skill body was lost, reload needed"))
     fm = frontmatter(f.lines)
-    if "pemicu" not in ignore:
+    if "trigger" not in ignore:
         d = fm.get("description", "")
         if not d:
-            out.append(Finding(str(f.path), 1, "error", "pemicu",
+            out.append(Finding(str(f.path), 1, "error", "trigger",
                                "frontmatter has no description — agent cannot know when to load it"))
         elif not re.match(r"(use when|use for|use this|load when|when the user)", d.lower()):
-            out.append(Finding(str(f.path), 1, "info", "pemicu",
+            out.append(Finding(str(f.path), 1, "info", "trigger",
                                "description should start with 'Use when ...' so the trigger is unambiguous"))
     return out
 
@@ -317,11 +317,11 @@ def selftest() -> int:
             "and `references/deep.md`\n")
         findings, files = analyze(root, "repo", set(), 2000, 10_000, 2000)
         codes = {f.code for f in findings}
-        assert "ref-mati" in codes, codes
-        assert "duplikat" in codes, codes
-        assert "pemicu" in codes, codes
+        assert "broken-ref" in codes, codes
+        assert "duplicate" in codes, codes
+        assert "trigger" in codes, codes
         assert "pruned" in codes, codes
-        hi = [f for f in findings if f.code == "ref-mati" and f.level == "error"]
+        hi = [f for f in findings if f.code == "broken-ref" and f.level == "error"]
         assert hi, "shipped-path refs must be errors, not info"
         assert score(findings) < 100
         assert len(files) == 3, len(files)
