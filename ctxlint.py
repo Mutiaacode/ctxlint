@@ -65,6 +65,17 @@ class Finding:
 
 STARS = {"error": "error", "warn": "warn ", "info": "info "}
 
+CHECKS = [
+    ("broken-ref", "error", "a path the file claims to ship does not exist"),
+    ("broken-ref", "info",  "a path mentioned in passing does not exist"),
+    ("duplicate",  "warn",  "the same rule appears in more than one file"),
+    ("stale",      "warn",  "file unchanged for N days per git"),
+    ("cost",       "warn",  "file exceeds the per-run token budget"),
+    ("trigger",    "info",  "skill description does not start with 'Use when ...'"),
+    ("pruned",     "error", "[SKILL_PRUNED] placeholder left in a skill"),
+    ("budget",     "warn",  "memory file is at its char limit"),
+]
+
 def tok(text: str) -> int:
     return max(1, round(len(text) / 4))
 
@@ -353,10 +364,15 @@ def main(argv=None) -> int:
                     help="char soft limit for memory files (default: 2000)")
     ap.add_argument("--version", action="version", version=f"ctxlint {VERSION}")
     ap.add_argument("--selftest", action="store_true", help="run built-in assertions")
+    ap.add_argument("--list-checks", action="store_true", help="print every check and exit")
     a = ap.parse_args(argv)
 
     if a.selftest:
         return selftest()
+    if a.list_checks:
+        for code, level, desc in CHECKS:
+            print(f"{code:<12} {level:<6} {desc}")
+        return 0
 
     target = Path(a.path).expanduser()
     if not target.is_dir():
