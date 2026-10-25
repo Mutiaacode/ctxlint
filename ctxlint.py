@@ -347,6 +347,19 @@ def selftest() -> int:
 
 # ---------------------------------------------------------------- main
 
+def detect_agent(target: Path) -> str:
+    home = Path(os.environ.get("HERMES_HOME", Path.home() / ".hermes")).expanduser()
+    try:
+        t = target.resolve()
+        home = home.resolve()
+    except OSError:
+        return "repo"
+    if t == home or home in t.parents:
+        return "hermes"
+    if any(target.glob("skills/*/SKILL.md")):
+        return "hermes"
+    return "repo"
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(
         prog="ctxlint", description="Lint the context your AI agent reads.")
@@ -381,9 +394,7 @@ def main(argv=None) -> int:
 
     agent = a.agent
     if agent == "auto":
-        agent = "hermes" if (Path.home() / ".hermes" / "skills").is_dir() and \
-            target.resolve() in ((Path.home() / ".hermes").resolve(),
-                                 (Path.home() / ".hermes" / "skills").resolve()) else "repo"
+        agent = detect_agent(target)
 
     ignore = {c.strip() for c in a.ignore.split(",") if c.strip()}
     findings, files = analyze(target, agent, ignore, a.max_tokens, a.max_days, a.memory_limit)
