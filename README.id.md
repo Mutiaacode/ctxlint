@@ -73,6 +73,7 @@ ctxlint --ignore stale,cost      # lewati pemeriksaan yang terlalu berisik
 ctxlint --max-tokens 6000        # batas token per file (default 4000)
 ctxlint --max-days 90            # seberapa lama dianggap basi (default 180)
 ctxlint --selftest               # jalankan tes bawaan
+ctxlint --list-checks            # tampilkan semua pemeriksaan lalu keluar
 ```
 
 Untuk melewati satu baris saja, taruh komentar di ujung baris itu:

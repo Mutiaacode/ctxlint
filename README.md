@@ -73,6 +73,7 @@ ctxlint --ignore stale,cost      # skip checks that are too noisy for you
 ctxlint --max-tokens 6000        # per-file token budget (default 4000)
 ctxlint --max-days 90            # how old is "stale" (default 180)
 ctxlint --selftest               # run the built-in tests
+ctxlint --list-checks            # print every check and exit
 ```
 
 To skip one line, add a comment at the end of it:
