@@ -69,6 +69,8 @@ ctxlint path/to/repo             # check another repo
 ctxlint --agent hermes           # check ~/.hermes/skills and ~/.hermes/memories
 ctxlint --quiet                  # errors only, best for CI
 ctxlint --json                   # machine readable output
+ctxlint --format sarif           # SARIF 2.1.0 for GitHub code scanning
+ctxlint --format markdown        # table you can paste into a PR comment
 ctxlint --ignore stale,cost      # skip checks that are too noisy for you
 ctxlint --max-tokens 6000        # per-file token budget (default 4000)
 ctxlint --max-days 90            # how old is "stale" (default 180)
@@ -136,7 +138,7 @@ jobs:
 
 ## Roadmap
 
-Planned: `--fix` for safe rewrites (move a duplicated rule into one file), a `ctxsync` mode that writes one shared rule file for every agent, checks for MCP configs (duplicate servers, dead commands), SARIF output and conflict detection (two skills giving opposite orders).
+Planned: `--fix` for safe rewrites (move a duplicated rule into one file), a `ctxsync` mode that writes one shared rule file for every agent, checks for MCP configs (duplicate servers, dead commands), conflict detection (two skills giving opposite orders), MCP config checks, near-clone detection.
 
 Not planned: another trace viewer, an eval platform, a dashboard, a framework.
 

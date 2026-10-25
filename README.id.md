@@ -69,6 +69,8 @@ ctxlint path/to/repo             # periksa repo lain
 ctxlint --agent hermes           # periksa ~/.hermes/skills dan ~/.hermes/memories
 ctxlint --quiet                  # hanya error, cocok untuk CI
 ctxlint --json                   # output untuk dibaca mesin
+ctxlint --format sarif           # SARIF 2.1.0 untuk GitHub code scanning
+ctxlint --format markdown        # tabel siap tempel di komentar PR
 ctxlint --ignore stale,cost      # lewati pemeriksaan yang terlalu berisik
 ctxlint --max-tokens 6000        # batas token per file (default 4000)
 ctxlint --max-days 90            # seberapa lama dianggap basi (default 180)
@@ -136,7 +138,7 @@ jobs:
 
 ## Rencana
 
-Direncanakan: `--fix` untuk menulis ulang dengan aman (pindahkan aturan dobel ke satu file), mode `ctxsync` yang menulis satu file aturan bersama untuk semua agent, pemeriksaan config MCP (server dobel, command mati), output SARIF dan deteksi konflik (dua skill memberi perintah berlawanan).
+Direncanakan: `--fix` untuk menulis ulang dengan aman (pindahkan aturan dobel ke satu file), mode `ctxsync` yang menulis satu file aturan bersama untuk semua agent, pemeriksaan config MCP (server dobel, command mati), deteksi konflik (dua skill memberi perintah berlawanan), cek config MCP, deteksi near-clone.
 
 Tidak direncanakan: trace viewer lagi, platform eval, dashboard, framework.
 
