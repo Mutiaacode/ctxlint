@@ -310,10 +310,52 @@ def score(findings: list[Finding]) -> int:
     pen = sum(3 if f.level == "error" else 1 for f in findings if f.level != "info")
     return max(0, 100 - pen)
 
-def report(findings, files, as_json, quiet, target) -> int:
+SARIF_LEVEL = {"error": "error", "warn": "warning", "info": "note"}
+
+def emit_sarif(findings, files) -> str:
+    rules = [{"id": code, "shortDescription": {"text": desc}} for code, _, desc in CHECKS]
+    results = []
+    for f in findings:
+        results.append({
+            "ruleId": f.code,
+            "level": SARIF_LEVEL[f.level],
+            "message": {"text": f.msg},
+            "locations": [{"physicalLocation": {
+                "artifactLocation": {"uri": os.path.relpath(f.path, Path.cwd())},
+                "region": {"startLine": f.line}}}],
+        })
+    return json.dumps({
+        "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+        "version": "2.1.0",
+        "runs": [{"tool": {"driver": {"name": "ctxlint", "version": VERSION,
+                                      "rules": rules}},
+                  "results": results}],
+    }, indent=2)
+
+def emit_markdown(findings, files) -> str:
+    out = ["| file:line | level | code | message |", "|---|---|---|---|"]
+    for f in findings:
+        out.append(f"| `{os.path.relpath(f.path, Path.cwd())}:{f.line}` | {f.level} "
+                   f"| `{f.code}` | {f.msg.replace('|', '\\|')} |")
+    if len(out) == 2:
+        out.append("| — | — | — | nothing to fix |")
+    out.append("")
+    out.append(f"**context:** {len(files)} files, ~{sum(tok(f.text) for f in files)} tokens/run "
+               f"· {sum(f.level == 'error' for f in findings)} error, "
+               f"{sum(f.level == 'warn' for f in findings)} warn · score {score(findings)}/100")
+    return "\n".join(out)
+
+def report(findings, files, as_json, quiet, target, fmt="table") -> int:
     total_tok = sum(tok(f.text) for f in files)
     sc = score(findings)
-    if as_json:
+    rc = 1 if any(f.level == "error" for f in findings) else 0
+    if fmt == "sarif":
+        print(emit_sarif(findings, files))
+        return rc
+    if fmt == "markdown":
+        print(emit_markdown(findings, files))
+        return rc
+    if fmt == "json" or as_json:
         print(json.dumps({
             "version": VERSION, "score": sc, "files": len(files),
             "tokens": total_tok,
@@ -374,6 +416,10 @@ def selftest() -> int:
         sk_find, _ = analyze(root, "repo", set(), 2000, 10_000, 2000)
         secrets = [f for f in sk_find if f.code == "secret"]
         assert len(secrets) == 1, [f.msg for f in secrets]
+        # output formats stay machine readable
+        sar = json.loads(emit_sarif(findings, files))
+        assert sar["version"] == "2.1.0" and sar["runs"][0]["results"], sar
+        assert emit_markdown(findings, files).startswith("| file:line |")
         # clean tree stays clean
         for p in root.rglob("*.md"):
             p.unlink()
@@ -405,6 +451,8 @@ def main(argv=None) -> int:
     ap.add_argument("--agent", default="auto", choices=["auto", "repo", "hermes"],
                     help="which context layout to scan (default: auto)")
     ap.add_argument("--json", action="store_true", help="machine readable output")
+    ap.add_argument("--format", default="table", choices=["table", "json", "markdown", "sarif"],
+                    help="output format (default: table)")
     ap.add_argument("--quiet", action="store_true", help="only errors")
     ap.add_argument("--ignore", default="", help="comma separated rule codes to skip")
     ap.add_argument("--max-tokens", type=int, default=4000,
@@ -439,7 +487,7 @@ def main(argv=None) -> int:
     if not files:
         print(f"ctxlint: no context files found in {target} (agent={agent})", file=sys.stderr)
         return 0
-    return report(findings, files, a.json, a.quiet, target)
+    return report(findings, files, a.json, a.quiet, target, a.format)
 
 if __name__ == "__main__":
     sys.exit(main())
