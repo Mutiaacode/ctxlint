@@ -94,6 +94,7 @@ To skip one line, add a comment at the end of it:
 | `trigger` | info | a skill description does not start with "Use when ...", so the trigger is unclear |
 | `pruned` | error | a `[SKILL_PRUNED]` placeholder was left inside a skill body |
 | `budget` | warn | a memory file is full, with no room left for new facts |
+| `secret` | error | a token or private key is committed in a context file |
 
 Why the same code has two levels: a path the file says it ships is a fact we can check, so it is an error. A `package.json` mentioned in the middle of a sentence might only be an example, so it is `info`.
 
@@ -135,7 +136,7 @@ jobs:
 
 ## Roadmap
 
-Planned: `--fix` for safe rewrites (move a duplicated rule into one file), a `ctxsync` mode that writes one shared rule file for every agent, checks for MCP configs (duplicate servers, dead commands), SARIF output, secret scanning, and conflict detection (two skills giving opposite orders).
+Planned: `--fix` for safe rewrites (move a duplicated rule into one file), a `ctxsync` mode that writes one shared rule file for every agent, checks for MCP configs (duplicate servers, dead commands), SARIF output and conflict detection (two skills giving opposite orders).
 
 Not planned: another trace viewer, an eval platform, a dashboard, a framework.
 
