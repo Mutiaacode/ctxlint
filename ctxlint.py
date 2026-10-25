@@ -38,6 +38,19 @@ BACKTICK_RE = re.compile(r"`([^`\n]+)`")
 REF_RE = re.compile(r"^(?:~|\.{1,2}/|/)?[\w.@/-]*[\w-]\.(?:" + FILE_EXT + r")$")
 SKIP_REF_CHARS = set("{}<>*$|%()[]\"'=,;")
 BARE_REFS = {"py", "sh", "bash", "mjs", "cjs", "service", "sql", "db"}
+
+SECRET_PATTERNS = [
+    ("github-token", re.compile(r"\bgh[pousr]_[A-Za-z0-9]{36}\b")),
+    ("github-pat", re.compile(r"\bgithub_pat_[A-Za-z0-9_]{22,}\b")),
+    ("openai-key", re.compile(r"\bsk-[A-Za-z0-9_-]{20,}\b")),
+    ("aws-key", re.compile(r"\bAKIA[0-9A-Z]{16}\b")),
+    ("slack-token", re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{10,}\b")),
+    ("google-key", re.compile(r"\bAIza[0-9A-Za-z_-]{35}\b")),
+    ("private-key", re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----")),
+]
+PLACEHOLDER_RE = re.compile(
+    r"(?:x{4,}|X{4,}|\.\.\.|<[^>]*>|example|placeholder|your[-_ ]?token|dummy|fake|redacted)",
+    re.I)
 # paths a skill/doc claims to ship with itself — checkable, so high confidence
 SHIPPED_PREFIX = ("references/", "scripts/", "assets/", "templates/", "./", "../")
 
@@ -74,6 +87,7 @@ CHECKS = [
     ("trigger",    "info",  "skill description does not start with 'Use when ...'"),
     ("pruned",     "error", "[SKILL_PRUNED] placeholder left in a skill"),
     ("budget",     "warn",  "memory file is at its char limit"),
+    ("secret",     "error", "a token or private key is committed in a context file"),
 ]
 
 def tok(text: str) -> int:
@@ -252,6 +266,21 @@ def check_skill(f: CtxFile, ignore: set[str]) -> list[Finding]:
                                "description should start with 'Use when ...' so the trigger is unambiguous"))
     return out
 
+def check_secret(f: CtxFile, ignore: set[str]) -> list[Finding]:
+    if "secret" in ignore:
+        return []
+    out = []
+    for i, line in enumerate(f.lines, 1):
+        if "ctxlint-ignore" in line:
+            continue
+        for name, pat in SECRET_PATTERNS:
+            m = pat.search(line)
+            if m and not PLACEHOLDER_RE.search(m.group(0)):
+                out.append(Finding(str(f.path), i, "error", "secret",
+                                   f"looks like a {name} committed in a context file"))
+                break
+    return out
+
 def check_memory(f: CtxFile, ignore: set[str], limit: int) -> list[Finding]:
     if "budget" in ignore or len(f.text) <= limit:
         return []
@@ -268,6 +297,7 @@ def analyze(target: Path, agent: str, ignore: set[str], max_tokens: int,
         out += check_refs(f, ignore)
         out += check_cost(f, ignore, max_tokens)
         out += check_stale(f, ignore, max_days)
+        out += check_secret(f, ignore)
         if f.kind == "skill":
             out += check_skill(f, ignore)
         if f.kind == "memory":
@@ -336,6 +366,14 @@ def selftest() -> int:
         assert hi, "shipped-path refs must be errors, not info"
         assert score(findings) < 100
         assert len(files) == 3, len(files)
+        # secret scanning: a token-shaped value is an error, a placeholder is not
+        (root / "AGENTS.md").write_text(
+            "token: ghp_a1B2c3D4e5F6g7H8i9J0k1L2m3N4o5P6q7R8\n"
+            "placeholder: ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n"
+            "example: sk-...\n")
+        sk_find, _ = analyze(root, "repo", set(), 2000, 10_000, 2000)
+        secrets = [f for f in sk_find if f.code == "secret"]
+        assert len(secrets) == 1, [f.msg for f in secrets]
         # clean tree stays clean
         for p in root.rglob("*.md"):
             p.unlink()

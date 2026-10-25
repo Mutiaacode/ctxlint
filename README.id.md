@@ -94,6 +94,7 @@ Untuk melewati satu baris saja, taruh komentar di ujung baris itu:
 | `trigger` | info | `description` skill tidak diawali "Use when ...", jadi pemicunya tidak jelas |
 | `pruned` | error | placeholder `[SKILL_PRUNED]` tertinggal di isi skill |
 | `budget` | warn | file memori sudah penuh, tidak ada ruang untuk fakta baru |
+| `secret` | error | ada token atau private key yang ikut ke-commit di file konteks |
 
 Kenapa satu code punya dua level: path yang katanya ikut dikirim itu fakta yang bisa dicek, jadi statusnya error. Sedangkan `package.json` yang disebut di tengah kalimat bisa jadi cuma contoh, jadi statusnya `info`.
 
@@ -135,7 +136,7 @@ jobs:
 
 ## Rencana
 
-Direncanakan: `--fix` untuk menulis ulang dengan aman (pindahkan aturan dobel ke satu file), mode `ctxsync` yang menulis satu file aturan bersama untuk semua agent, pemeriksaan config MCP (server dobel, command mati), output SARIF, pemindaian secret, dan deteksi konflik (dua skill memberi perintah berlawanan).
+Direncanakan: `--fix` untuk menulis ulang dengan aman (pindahkan aturan dobel ke satu file), mode `ctxsync` yang menulis satu file aturan bersama untuk semua agent, pemeriksaan config MCP (server dobel, command mati), output SARIF dan deteksi konflik (dua skill memberi perintah berlawanan).
 
 Tidak direncanakan: trace viewer lagi, platform eval, dashboard, framework.
 
