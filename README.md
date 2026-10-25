@@ -129,9 +129,30 @@ jobs:
 
 ## Roadmap / non-goals
 
-Planned: `--fix` for safe rewrites (move duplicated rules to one file), a `ctxsync` mode that generates one canonical rule file for every agent, MCP config checks (duplicate servers, dead commands).
+Planned: `--fix` for safe rewrites (move duplicated rules to one file), a `ctxsync` mode that generates one canonical rule file for every agent, MCP config checks (duplicate servers, dead commands), SARIF output, secret scanning, and conflict-polarity detection (two skills giving opposite orders).
 
 Not planned: another trace viewer, an eval platform, a dashboard, a framework.
+
+## How it compares
+
+Being honest about the neighbours — the space is no longer empty, and if one of these fits you better, use it.
+
+| tool | scope | notable strengths | where ctxlint differs |
+|---|---|---|---|
+| [RuleSweep](https://github.com/gitstq/rulesweep) | repo root instruction files | secret-leak scan, `.mdc` frontmatter validation, SARIF output, `pip install` | ctxlint also scans `skills/**/SKILL.md`, validates assets a skill *ships* (`references/`, `scripts/`), and covers agent memory files |
+| [skillmesh](https://github.com/Wsh7Ash/skillmesh) | `SKILL.md` collections | conflict polarity + near-clone (Jaccard) detection, trigger overlap analysis | ctxlint is one file, no install, and also lints repo-level context and memory, not skills alone |
+| [promptlint](https://github.com/M-Ashrey/promptlint) | prompts + instruction files | hedging-language and placeholder checks | ctxlint focuses on verifiable facts (dead refs, drift, cost), not prose style |
+| [context-evaluator](https://github.com/PackmindHub/context-evaluator) | `AGENTS.md` / `CLAUDE.md` | 17 evaluators, AI-assisted remediation, hosted web UI | ctxlint never calls a model, runs offline in CI, and reports facts you can gate on |
+
+What ctxlint does that none of them do together:
+
+- **One linter, three layers** — repo context, agent skills, and memory files, in a single run and a single score.
+- **Ships-asset verification** — a skill that tells the agent to run `scripts/deploy.sh` is broken if that file is gone. That is an error, not prose.
+- **Severity by confidence** — only paths a file claims to ship are errors; anything contextual is `info`. Tuned on a real 78-file corpus, so it does not drown you in noise.
+- **Hermes layout** — `--agent hermes` reads `~/.hermes/skills` and `~/.hermes/memories`, which no other tool handles.
+- **Zero install** — one stdlib file. `curl` it and run it; nothing to trust at install time.
+
+Where the others are currently ahead: SARIF output (RuleSweep), conflict polarity detection and near-clone matching (skillmesh), secret scanning (RuleSweep), AI-assisted rewriting (context-evaluator). Those are roadmap items here, not shipped.
 
 ## Contributing
 
