@@ -1,14 +1,18 @@
 # ctxlint
 
-**ESLint untuk konteks yang dibaca AI agent kamu.**
+**Pemeriksa file aturan yang dibaca AI coding agent kamu.**
 
 [English](README.md) · [Bahasa Indonesia](README.id.md)
 
-Agent coding kamu membaca file aturan sebelum menyentuh satu baris kode: `AGENTS.md`, `CLAUDE.md`, `.cursor/rules`, `.clinerules`, `SKILL.md`. File-file itu lama-lama basi. Folder diganti nama, script dihapus, aturan yang sama ditempel ke lima file, dan satu file membengkak jadi 7k token yang dikirim ulang di setiap run.
+## Penjelasan singkat
 
-Agent tidak tahu ada yang salah. Dia membaca aturan basi itu dan mengikutinya dengan yakin.
+Sebelum menulis kode, agent kamu membaca file aturan: `AGENTS.md`, `CLAUDE.md`, `.cursor/rules`, `.clinerules`, `SKILL.md`. Di situ kamu memberi tahu hal seperti "test pakai `npm test`" atau "API ada di `src/api/v2`".
 
-`ctxlint` yang membaca file-file itu untuk kamu, lalu memberi tahu mana yang rusak, mati, dobel, atau terlalu mahal — sebelum agent kamu membuang satu run untuk itu.
+Lalu kode berjalan terus. Folder diganti nama, script dihapus, satu aturan ditempel ke lima file, satu file membengkak jadi 7000 token. File aturannya tidak ikut diperbarui.
+
+Agent tidak punya cara untuk tahu. Dia membaca aturan lama dan mengikutinya dengan patuh. Hasilnya salah, dan kamu menyalahkan modelnya.
+
+`ctxlint` membaca file-file itu dan memberi tahu mana yang sudah tidak cocok, mana yang menunjuk sesuatu yang sudah tidak ada, mana yang isinya dobel, dan mana yang kegedean. Satu perintah, satu tabel masalah, satu skor.
 
 ```
 $ ctxlint --agent hermes
@@ -21,11 +25,11 @@ skills/ui-ux-pro-max/SKILL.md:1          info   trigger     description should s
 context: 78 files, ~278950 tokens/run  ·  11 error, 31 warn  ·  score 36/100
 ```
 
-Exit code `1` kalau ada minimal satu error, jadi bisa langsung dipasang di CI.
+Kalau ada minimal satu error, exit code-nya `1`, jadi CI bisa menolak perubahan yang bermasalah.
 
-## Kenapa
+## Kenapa alat ini ada
 
-Karena masalahnya memang di sini — ini hasil hitung, bukan perasaan. Jumlah issue terbuka di tooling agent populer:
+Kami tidak menebak di mana masalahnya. Kami menghitungnya. Jumlah issue terbuka di tool agent populer:
 
 | repo | `context` | `memory` | `token cost` | `observability` |
 |---|---|---|---|---|
@@ -34,44 +38,44 @@ Karena masalahnya memang di sini — ini hasil hitung, bukan perasaan. Jumlah is
 | langchain-ai/langchain | 225 | 53 | 37 | 26 |
 | microsoft/autogen | 193 | 67 | 29 | 22 |
 
-Issue soal context/state 10-100x lebih banyak dari issue observability. Pasar trace viewer (LangSmith, Langfuse, Phoenix, Braintrust) sudah terlayani; belum ada yang mengurus "apa yang sebenarnya dibaca agent, dan apakah masih benar".
+Masalah soal context dan state 10 sampai 100 kali lebih banyak daripada masalah soal memantau agent berjalan. Alat untuk memantau sudah ada dan sudah bagus. Yang belum ada: yang mengurus apa yang sebenarnya diberitahukan ke agent.
 
-Bukti pendukung:
+Bukti lain:
 
-- Stack Overflow Developer Survey 2025: **66%** developer bilang frustrasi terbesar AI adalah output yang "hampir benar, tapi tidak"; **45%** bilang debugging kode buatan AI lebih lama.
-- Studi empiris pertanyaan agent di Stack Overflow (arXiv 2510.25423): observability cuma **11.6%** dari masalah agent, sementara koordinasi tool dan konfigurasi **23%**.
-- Judul issue yang berulang di lapangan: *"Cline auto compacts context silently"*, *"Clinerules are completely ignored"*, *"Checkpoint restore fails after internal continuations"*, *"1M context capped at 128K"*.
+- Stack Overflow Developer Survey 2025: **66%** developer bilang frustrasi AI terbesar mereka adalah hasil yang "hampir benar, tapi tidak", dan **45%** bilang debugging kode buatan AI lebih lama.
+- Studi pertanyaan soal agent di Stack Overflow (arXiv 2510.25423) menemukan observability cuma **11.6%** dari masalah agent, sementara koordinasi tool dan konfigurasi mencapai **23%**.
+- Judul issue yang berulang: *"Cline auto compacts context silently"*, *"Clinerules are completely ignored"*, *"Checkpoint restore fails after internal continuations"*.
 
-Linter tidak bisa memperbaiki modelnya. Tapi dia bisa menghentikan kamu memberi model itu informasi palsu — gratis.
+Linter tidak bisa membuat model jadi lebih pintar. Tapi dia bisa menghentikan kamu memberi informasi salah ke model — tanpa biaya tambahan.
 
 ## Instalasi
 
-Belum ada di PyPI — clone dulu:
+Belum ada di PyPI, jadi clone dulu:
 
 ```bash
 git clone https://github.com/Mutiaacode/ctxlint
 pipx install ./ctxlint          # atau: uv tool install ./ctxlint
-# tidak punya pipx? jalankan langsung saja:
+# tidak punya pipx? jalankan langsung filenya:
 python3 ctxlint/ctxlint.py --help
 ```
 
-Python 3.10+. Tanpa dependency. Tanpa panggilan jaringan. Tanpa API key.
+Butuh Python 3.10 ke atas. Tidak ada yang lain. Tanpa dependency, tanpa internet, tanpa API key.
 
 ## Cara pakai
 
 ```bash
-ctxlint                          # periksa repo di folder sekarang
+ctxlint                          # periksa repo tempat kamu berada
 ctxlint path/to/repo             # periksa repo lain
-ctxlint --agent hermes           # periksa ~/.hermes/skills + ~/.hermes/memories
-ctxlint --quiet                  # hanya error (cocok untuk CI)
-ctxlint --json                   # output mesin (cocok untuk script/editor)
-ctxlint --ignore stale,cost      # lewati aturan yang berisik
-ctxlint --max-tokens 6000        # budget token per file (default 4000)
-ctxlint --max-days 90            # ambang basi lewat git (default 180)
-ctxlint --selftest               # jalankan assertion bawaan
+ctxlint --agent hermes           # periksa ~/.hermes/skills dan ~/.hermes/memories
+ctxlint --quiet                  # hanya error, cocok untuk CI
+ctxlint --json                   # output untuk dibaca mesin
+ctxlint --ignore stale,cost      # lewati pemeriksaan yang terlalu berisik
+ctxlint --max-tokens 6000        # batas token per file (default 4000)
+ctxlint --max-days 90            # seberapa lama dianggap basi (default 180)
+ctxlint --selftest               # jalankan tes bawaan
 ```
 
-Matikan satu baris tertentu dengan komentar di ujungnya:
+Untuk melewati satu baris saja, taruh komentar di ujung baris itu:
 
 ```markdown
 - Config ada di `config/app.yaml` <!-- ctxlint-ignore -->
@@ -79,20 +83,20 @@ Matikan satu baris tertentu dengan komentar di ujungnya:
 
 ## Yang diperiksa
 
-| code | level | arti |
+| code | level | artinya |
 |---|---|---|
-| `broken-ref` | error | path yang diklaim ikut tool (`references/x.md`, `scripts/y.py`) tidak ada |
-| `broken-ref` | info | path lepas/kontekstual tidak ditemukan — bisa jadi cuma contoh di teks |
+| `broken-ref` | error | file menunjuk sesuatu yang katanya ikut dikirim (`references/x.md`, `scripts/y.py`), tapi barangnya sudah tidak ada |
+| `broken-ref` | info | path yang disebut sambil lalu tidak ditemukan — mungkin cuma contoh |
 | `duplicate` | warn | aturan yang sama ditulis di lebih dari satu file |
-| `stale` | warn | file tidak berubah N hari menurut git — pastikan masih cocok |
-| `cost` | warn | file melebihi budget token per run |
-| `trigger` | info | `description` skill tidak diawali "Use when ..." — pemicunya ambigu |
+| `stale` | warn | git bilang file tidak berubah selama N hari, jadi mungkin sudah tidak cocok dengan kodenya |
+| `cost` | warn | file lebih besar dari batas token, dan file ini dikirim di setiap run |
+| `trigger` | info | `description` skill tidak diawali "Use when ...", jadi pemicunya tidak jelas |
 | `pruned` | error | placeholder `[SKILL_PRUNED]` tertinggal di isi skill |
-| `budget` | warn | file memori melewati batas karakter, tidak ada ruang untuk fakta baru |
+| `budget` | warn | file memori sudah penuh, tidak ada ruang untuk fakta baru |
 
-Severity dikalibrasi berdasarkan keyakinan: hanya path yang diklaim *ikut* tool yang dianggap error. `package.json` yang disebut di tengah kalimat itu prosa, bukan cacat.
+Kenapa satu code punya dua level: path yang katanya ikut dikirim itu fakta yang bisa dicek, jadi statusnya error. Sedangkan `package.json` yang disebut di tengah kalimat bisa jadi cuma contoh, jadi statusnya `info`.
 
-## Kompatibel dengan
+## Cocok untuk
 
 Layout repo: `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `CONTEXT.md`, `.cursorrules`, `.windsurfrules`, `.clinerules`, `.rules`, `.aider.conf.yml`, `.github/copilot-instructions.md`, `.github/instructions/*.md`, `.cursor/rules/*`, `.claude/**/*.md`, `skills/**/SKILL.md`.
 
@@ -110,40 +114,39 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }   # kedalaman git untuk cek basi
+        with: { fetch-depth: 0 }   # cek basi butuh riwayat git
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       - run: python3 ctxlint.py --quiet .
 ```
 
-## Manfaat
+## Yang kamu dapat
 
-- **Lebih sedikit run terbuang.** Referensi rusak adalah instruksi salah yang langsung ditaati agent. Perbaikannya paling murah: ditangkap linter, bukan setelah task gagal.
-- **Prompt lebih murah.** File konteks dikirim ulang di setiap request. Memotong 7k token aturan basi dari task 5 request itu uang nyata, setiap hari.
+- **Lebih sedikit run terbuang.** Referensi rusak itu instruksi salah yang langsung dipatuhi agent. Menangkapnya di linter jauh lebih murah daripada menangkapnya setelah task gagal.
+- **Biaya token lebih kecil.** File konteks dikirim ulang di setiap request. Memotong 7000 token aturan basi dari task lima request itu uang nyata, setiap hari.
 - **Satu repo, banyak agent.** Lima agent membaca lima file aturan berbeda. `duplicate` menunjukkan aturan mana yang sudah bercabang, jadi kamu perbaiki sumbernya, bukan gejalanya.
 
-## Prinsip desain
+## Yang tidak dilakukan
 
-- Tanpa panggilan model, tanpa jaringan, tanpa telemetri — jalan di sandbox dan di CI.
-- Tanpa dependency, satu file, stdlib saja.
-- Bentuk yang familiar (seperti `eslint`/`ruff`): output tabel, kode aturan, `--ignore`, exit code.
-- Aturan harus fakta yang bisa diperiksa, bukan selera. Yang subjektif keluar sebagai `info`.
+- Tidak memanggil model. Tanpa jaringan, tanpa telemetri, tanpa API key. Jalan di CI dan di sandbox.
+- Tidak punya dependency. Satu file, hanya standard library.
+- Tidak menebak. Pemeriksaan hanya melaporkan hal yang bisa dibuktikan. Yang subjektif ditandai `info` dan tidak pernah menggagalkan build.
 
-## Roadmap / non-goals
+## Rencana
 
-Direncanakan: `--fix` untuk penulisan ulang yang aman (pindahkan aturan dobel ke satu file), mode `ctxsync` yang menghasilkan satu file aturan kanonik untuk semua agent, pemeriksaan config MCP (server dobel, command mati), output SARIF, pemindaian secret, dan deteksi konflik (dua skill memberi perintah berlawanan).
+Direncanakan: `--fix` untuk menulis ulang dengan aman (pindahkan aturan dobel ke satu file), mode `ctxsync` yang menulis satu file aturan bersama untuk semua agent, pemeriksaan config MCP (server dobel, command mati), output SARIF, pemindaian secret, dan deteksi konflik (dua skill memberi perintah berlawanan).
 
 Tidak direncanakan: trace viewer lagi, platform eval, dashboard, framework.
 
 ## Kontribusi
 
-Setiap aturan adalah satu fungsi di `ctxlint.py`: terima `CtxFile`, kembalikan `Finding`. Tambahkan ke `analyze()`, tambahkan fixture ke `--selftest`, lalu jalankan:
+Setiap pemeriksaan adalah satu fungsi di `ctxlint.py`: menerima `CtxFile`, mengembalikan `Finding`. Tambahkan ke `analyze()`, tambahkan fixture ke `--selftest`, lalu jalankan:
 
 ```bash
 python3 ctxlint.py --selftest
 ```
 
-Kalibrasi setiap aturan baru ke korpus nyata yang besar dulu. Aturan yang menyala di repo sehat lebih buruk daripada tidak ada aturan.
+Uji dulu setiap pemeriksaan baru ke kumpulan file nyata yang besar. Pemeriksaan yang menyala di repo sehat lebih buruk daripada tidak ada pemeriksaan.
 
 ## Lisensi
 

@@ -1,31 +1,35 @@
 # ctxlint
 
-**ESLint for the context your AI agent reads.**
+**A checker for the instruction files your AI coding agent reads.**
 
 [English](README.md) · [Bahasa Indonesia](README.id.md)
 
-Your coding agent loads rule files before it touches a line of code: `AGENTS.md`, `CLAUDE.md`, `.cursor/rules`, `.clinerules`, `SKILL.md`. Those files drift. Folders get renamed, scripts get deleted, the same rule ends up copy-pasted into five files, and one file grows to 7k tokens that get re-sent on every single run.
+## In one minute
 
-The agent does not know any of that is wrong. It reads the stale rule and confidently follows it.
+Before your agent writes any code, it reads instruction files: `AGENTS.md`, `CLAUDE.md`, `.cursor/rules`, `.clinerules`, `SKILL.md`. That is where you tell it "run tests with `npm test`" or "the API lives in `src/api/v2`".
 
-`ctxlint` reads those files instead, and tells you what is broken, dead, duplicated or too expensive — before your agent wastes a run on it.
+Then the code moves on. A folder gets renamed, a script gets deleted, a rule gets copied into five files, one file grows to 7000 tokens. The instruction files do not get updated.
+
+The agent has no way to know. It reads the old instruction and follows it exactly. You get a wrong result and blame the model.
+
+`ctxlint` reads those files and tells you which ones are out of date, which point at things that no longer exist, which repeat each other, and which are too big. One command, a table of problems, a score.
 
 ```
 $ ctxlint --agent hermes
 skills/agent-visualization/SKILL.md:65   error  broken-ref  references `references/pixel-character-sprites.md` which does not exist
 skills/office/SKILL.md:236               error  broken-ref  references `scripts/office/soffice.py` which does not exist
-skills/market-analysis/SKILL.md:1        warn   cost     ~7110 tokens loaded every run (budget 4000)
-skills/market-analysis/SKILL.md:129      warn   duplicate  same rule also in skills/xauusd-analysis/SKILL.md:41
-skills/ui-ux-pro-max/SKILL.md:1          info   trigger    description should start with 'Use when ...'
+skills/market-analysis/SKILL.md:1        warn   cost        ~7110 tokens loaded every run (budget 4000)
+skills/market-analysis/SKILL.md:129      warn   duplicate   same rule also in skills/xauusd-analysis/SKILL.md:41
+skills/ui-ux-pro-max/SKILL.md:1          info   trigger     description should start with 'Use when ...'
 
 context: 78 files, ~278950 tokens/run  ·  11 error, 31 warn  ·  score 36/100
 ```
 
-Exit code is `1` when there is at least one error, so it drops straight into CI.
+If there is at least one error, the exit code is `1`, so CI can block a bad change.
 
-## Why
+## Why this exists
 
-Because this is where the bugs actually are, measured, not guessed. Open issue counts across popular agent tooling:
+We did not guess where the problems are. We counted them. Open issues in popular agent tools:
 
 | repo | `context` | `memory` | `token cost` | `observability` |
 |---|---|---|---|---|
@@ -34,44 +38,44 @@ Because this is where the bugs actually are, measured, not guessed. Open issue c
 | langchain-ai/langchain | 225 | 53 | 37 | 26 |
 | microsoft/autogen | 193 | 67 | 29 | 22 |
 
-Context/state issues outnumber observability issues by 10-100x. The trace-viewer market (LangSmith, Langfuse, Phoenix, Braintrust) is already well served; nobody owns "what the agent actually reads, and is it still true".
+Problems about context and state are 10 to 100 times more common than problems about watching an agent run. Tools for watching already exist and are good. Nobody looks after what the agent is actually told.
 
-Supporting evidence:
+More evidence:
 
-- Stack Overflow Developer Survey 2025: **66%** of developers say the biggest AI frustration is output that is "almost right, but not quite"; **45%** say debugging AI-generated code takes longer.
-- Empirical study of agent questions on Stack Overflow (arXiv 2510.25423): observability is only **11.6%** of agent problems, while tool-use coordination and configuration are **23%**.
-- Recurring issue titles in the wild: *"Cline auto compacts context silently"*, *"Clinerules are completely ignored"*, *"Checkpoint restore fails after internal continuations"*, *"1M context capped at 128K"*.
+- Stack Overflow Developer Survey 2025: **66%** of developers say their biggest AI frustration is output that is "almost right, but not quite", and **45%** say debugging AI-written code takes longer.
+- A study of agent questions on Stack Overflow (arXiv 2510.25423) found observability is only **11.6%** of agent problems; tool coordination and configuration make up **23%**.
+- Issue titles that keep coming back: *"Cline auto compacts context silently"*, *"Clinerules are completely ignored"*, *"Checkpoint restore fails after internal continuations"*.
 
-A linter cannot fix the model. It can stop you from feeding it lies for free.
+A linter cannot make the model smarter. It can stop you from feeding it wrong information for free.
 
 ## Install
 
-Not on PyPI yet — clone it:
+Not on PyPI yet, so clone it:
 
 ```bash
 git clone https://github.com/Mutiaacode/ctxlint
 pipx install ./ctxlint          # or: uv tool install ./ctxlint
-# no pipx? just run it directly:
+# no pipx? just run the file:
 python3 ctxlint/ctxlint.py --help
 ```
 
-Python 3.10+. No dependencies. No network calls. No API key.
+Needs Python 3.10 or newer. Nothing else. No dependencies, no internet, no API key.
 
 ## Usage
 
 ```bash
-ctxlint                          # lint the repo in the current directory
-ctxlint path/to/repo             # lint another repo
-ctxlint --agent hermes           # lint ~/.hermes/skills + ~/.hermes/memories
-ctxlint --quiet                  # errors only (good for CI)
-ctxlint --json                   # machine readable (good for scripts/editors)
-ctxlint --ignore stale,cost      # skip noisy rules
+ctxlint                          # check the repo you are in
+ctxlint path/to/repo             # check another repo
+ctxlint --agent hermes           # check ~/.hermes/skills and ~/.hermes/memories
+ctxlint --quiet                  # errors only, best for CI
+ctxlint --json                   # machine readable output
+ctxlint --ignore stale,cost      # skip checks that are too noisy for you
 ctxlint --max-tokens 6000        # per-file token budget (default 4000)
-ctxlint --max-days 90            # staleness threshold via git (default 180)
-ctxlint --selftest               # run the built-in assertions
+ctxlint --max-days 90            # how old is "stale" (default 180)
+ctxlint --selftest               # run the built-in tests
 ```
 
-Silence one specific line with a trailing comment:
+To skip one line, add a comment at the end of it:
 
 ```markdown
 - Config lives in `config/app.yaml` <!-- ctxlint-ignore -->
@@ -79,18 +83,18 @@ Silence one specific line with a trailing comment:
 
 ## What it checks
 
-| code | level | meaning |
+| code | level | what it means |
 |---|---|---|
-| `broken-ref` | error | a shipped path (`references/x.md`, `scripts/y.py`) does not exist |
-| `broken-ref` | info | a bare or contextual path is missing — may be illustrative prose |
+| `broken-ref` | error | the file points at something it claims to ship (`references/x.md`, `scripts/y.py`) and that thing is gone |
+| `broken-ref` | info | a path mentioned in passing is not found — may just be an example |
 | `duplicate` | warn | the same rule is written in more than one file |
-| `stale` | warn | file untouched for N days according to git — verify it still matches |
-| `cost` | warn | file exceeds the per-run token budget |
-| `trigger` | info | skill `description` does not start with "Use when ..." — ambiguous trigger |
-| `pruned` | error | `[SKILL_PRUNED]` placeholder left in a skill body |
-| `budget` | warn | memory file over its char soft limit, no room left |
+| `stale` | warn | git says the file has not changed in N days, so it may no longer match the code |
+| `cost` | warn | the file is larger than the token budget, and it is sent on every run |
+| `trigger` | info | a skill description does not start with "Use when ...", so the trigger is unclear |
+| `pruned` | error | a `[SKILL_PRUNED]` placeholder was left inside a skill body |
+| `budget` | warn | a memory file is full, with no room left for new facts |
 
-Severity is calibrated by confidence: only paths the file claims to *ship* are errors. A `package.json` mentioned mid-sentence is prose, not a defect.
+Why the same code has two levels: a path the file says it ships is a fact we can check, so it is an error. A `package.json` mentioned in the middle of a sentence might only be an example, so it is `info`.
 
 ## Works with
 
@@ -98,7 +102,7 @@ Repo layout: `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `CONTEXT.md`, `.cursorrules`
 
 Hermes layout (`--agent hermes`): `~/.hermes/skills/**/SKILL.md`, `~/.hermes/memories/*.md`, `~/.hermes/AGENTS.md`, `~/.hermes/SOUL.md`.
 
-Adding another layout is one function in `discover()`.
+Supporting another layout takes one function in `discover()`.
 
 ## CI
 
@@ -110,40 +114,39 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }   # stash depth needed for the staleness check
+        with: { fetch-depth: 0 }   # the staleness check needs git history
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       - run: python3 ctxlint.py --quiet .
 ```
 
-## Benefits
+## What you get
 
-- **Fewer wasted runs.** A broken reference is a wrong instruction the agent obeys instantly. Cheapest possible fix: catch it in a linter instead of in a failed task.
-- **Cheaper prompts.** Context files are re-sent on every request. Trimming 7k tokens of stale rules off a 5-request task is real money, every single day.
-- **One repo, many agents.** Five agents read five different rule files. `duplicate` shows you which rules have already drifted apart, so you fix the source, not the symptom.
+- **Fewer wasted runs.** A broken reference is a wrong instruction the agent obeys instantly. Catching it in a linter is much cheaper than catching it after a failed task.
+- **Lower token cost.** Context files are sent again with every request. Cutting 7000 tokens of stale rules from a five-request task saves real money, every day.
+- **One repo, many agents.** Five agents read five different rule files. `duplicate` shows you which rules have already drifted apart, so you fix the source instead of the symptom.
 
-## Design principles
+## What it will not do
 
-- No model calls, no network, no telemetry — it runs in a sandbox and in CI.
-- No dependencies, one file, stdlib only.
-- Familiar shape (like `eslint`/`ruff`): table output, rule codes, `--ignore`, exit codes.
-- Rules must be checkable facts, not tastes. Anything subjective ships as `info`.
+- It will not call a model. No network, no telemetry, no API key. It runs in CI and in a sandbox.
+- It will not have dependencies. One file, standard library only.
+- It will not guess. Checks report things that can be verified. Anything subjective is marked `info` and never fails a build.
 
-## Roadmap / non-goals
+## Roadmap
 
-Planned: `--fix` for safe rewrites (move duplicated rules to one file), a `ctxsync` mode that generates one canonical rule file for every agent, MCP config checks (duplicate servers, dead commands), SARIF output, secret scanning, and conflict-polarity detection (two skills giving opposite orders).
+Planned: `--fix` for safe rewrites (move a duplicated rule into one file), a `ctxsync` mode that writes one shared rule file for every agent, checks for MCP configs (duplicate servers, dead commands), SARIF output, secret scanning, and conflict detection (two skills giving opposite orders).
 
 Not planned: another trace viewer, an eval platform, a dashboard, a framework.
 
 ## Contributing
 
-Each rule is one function in `ctxlint.py`: take a `CtxFile`, return `Finding`s. Add it to `analyze()`, add a fixture to `--selftest`, run:
+Every check is one function in `ctxlint.py`: it takes a `CtxFile` and returns `Finding`s. Add it to `analyze()`, add a fixture to `--selftest`, then run:
 
 ```bash
 python3 ctxlint.py --selftest
 ```
 
-Calibrate every new rule against a big real corpus first. A rule that fires on healthy repos is worse than no rule.
+Test any new check against a big real collection of files first. A check that fires on healthy repos is worse than no check at all.
 
 ## License
 
