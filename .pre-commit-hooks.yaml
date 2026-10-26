@@ -1,0 +1,8 @@
+# https://pre-commit.com — run ctxlint on every commit
+- id: ctxlint
+  name: ctxlint
+  description: Lint the context your AI agent reads
+  entry: ctxlint
+  language: python
+  pass_filenames: false
+  args: [--quiet, .]

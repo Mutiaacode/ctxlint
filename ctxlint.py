@@ -335,8 +335,9 @@ def emit_sarif(findings, files) -> str:
 def emit_markdown(findings, files) -> str:
     out = ["| file:line | level | code | message |", "|---|---|---|---|"]
     for f in findings:
-        out.append(f"| `{os.path.relpath(f.path, Path.cwd())}:{f.line}` | {f.level} "
-                   f"| `{f.code}` | {f.msg.replace('|', '\\|')} |")
+        msg = f.msg.replace("|", "\\|")
+        out.append(f"| `{show(f.path)}:{f.line}` | {f.level} "
+                   f"| `{f.code}` | {msg} |")
     if len(out) == 2:
         out.append("| — | — | — | nothing to fix |")
     out.append("")
@@ -344,6 +345,11 @@ def emit_markdown(findings, files) -> str:
                f"· {sum(f.level == 'error' for f in findings)} error, "
                f"{sum(f.level == 'warn' for f in findings)} warn · score {score(findings)}/100")
     return "\n".join(out)
+
+def show(path: str) -> str:
+    """Readable path for the terminal: fall back to absolute when relpath escapes cwd."""
+    rel = os.path.relpath(path, Path.cwd())
+    return path if rel.startswith("..") else rel
 
 def report(findings, files, as_json, quiet, target, fmt="table") -> int:
     total_tok = sum(tok(f.text) for f in files)
@@ -367,8 +373,7 @@ def report(findings, files, as_json, quiet, target, fmt="table") -> int:
 
     shown = [f for f in findings if not quiet or f.level == "error"]
     for f in shown:
-        rel = os.path.relpath(f.path, Path.cwd())
-        print(f"{rel}:{f.line}".ljust(44) + f" {STARS[f.level]}  {f.code:<9} {f.msg}")
+        print(f"{show(f.path)}:{f.line}".ljust(44) + f" {STARS[f.level]}  {f.code:<9} {f.msg}")
 
     errs = sum(f.level == "error" for f in findings)
     warns = sum(f.level == "warn" for f in findings)

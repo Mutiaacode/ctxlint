@@ -4,6 +4,12 @@
 
 [English](README.md) · [Bahasa Indonesia](README.id.md)
 
+[![CI](https://github.com/Mutiaacode/ctxlint/actions/workflows/ctxlint.yml/badge.svg)](https://github.com/Mutiaacode/ctxlint/actions/workflows/ctxlint.yml)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://github.com/Mutiaacode/ctxlint/blob/master/pyproject.toml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen)](https://github.com/Mutiaacode/ctxlint/blob/master/.pre-commit-hooks.yaml)
+[![dependencies: none](https://img.shields.io/badge/dependencies-none-lightgrey)](pyproject.toml)
+
 ## Penjelasan singkat
 
 Sebelum menulis kode, agent kamu membaca file aturan: `AGENTS.md`, `CLAUDE.md`, `.cursor/rules`, `.clinerules`, `SKILL.md`. Di situ kamu memberi tahu hal seperti "test pakai `npm test`" atau "API ada di `src/api/v2`".
@@ -50,16 +56,34 @@ Linter tidak bisa membuat model jadi lebih pintar. Tapi dia bisa menghentikan ka
 
 ## Instalasi
 
-Belum ada di PyPI, jadi clone dulu:
+Butuh Python 3.10 ke atas. Tidak ada yang lain — tanpa dependency, tanpa internet, tanpa API key.
 
 ```bash
-git clone https://github.com/Mutiaacode/ctxlint
-pipx install ./ctxlint          # atau: uv tool install ./ctxlint
-# tidak punya pipx? jalankan langsung filenya:
-python3 ctxlint/ctxlint.py --help
+# satu perintah, environment terisolasi, tanpa clone
+uv tool install git+https://github.com/Mutiaacode/ctxlint
+pipx install git+https://github.com/Mutiaacode/ctxlint
+
+# atau pip biasa, di dalam venv
+python3 -m pip install git+https://github.com/Mutiaacode/ctxlint
+
+# atau tidak install sama sekali
+python3 ctxlint.py --help
 ```
 
-Butuh Python 3.10 ke atas. Tidak ada yang lain. Tanpa dependency, tanpa internet, tanpa API key.
+Cek hasilnya:
+
+```bash
+ctxlint --version     # ctxlint 0.1.0
+```
+
+### Sebagai hook pre-commit
+
+```yaml
+repos:
+  - repo: https://github.com/Mutiaacode/ctxlint
+    rev: v0.1.0
+    hooks: [{ id: ctxlint }]
+```
 
 ## Cara pakai
 
@@ -110,6 +134,8 @@ Menambah layout lain cukup satu fungsi di `discover()`.
 
 ## CI
 
+Salin [`.github/workflows/ctxlint.yml`](.github/workflows/ctxlint.yml), atau mulai dari versi pendek ini:
+
 ```yaml
 name: ctxlint
 on: [push, pull_request]
@@ -123,6 +149,8 @@ jobs:
         with: { python-version: "3.12" }
       - run: python3 ctxlint.py --quiet .
 ```
+
+`--format sarif` plus `github/codeql-action/upload-sarif` memindahkan temuan ke tab Security → Code scanning, bukan cuma log job.
 
 ## Yang kamu dapat
 

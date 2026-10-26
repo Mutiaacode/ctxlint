@@ -1,13 +1,43 @@
 name: ctxlint
-on: [push, pull_request]
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+  security-events: write
 
 jobs:
-  ctxlint:
+  test:
+    name: py${{ matrix.python }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }   # the staleness check needs git history
+      - uses: actions/setup-python@v5
+        with: { python-version: "${{ matrix.python }}" }
+      - run: python3 ctxlint.py --selftest
+      - run: python3 ctxlint.py --quiet .
+      - name: installs as a console script
+        run: |
+          python3 -m pip install --quiet .
+          ctxlint --version
+          ctxlint --list-checks > /dev/null
+
+  sarif:
+    name: code scanning
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
-      - run: python3 ctxlint.py --selftest
-      - run: python3 ctxlint.py --quiet .
+      - run: python3 ctxlint.py --format sarif . > ctxlint.sarif
+        continue-on-error: true   # report findings, do not fail the job
+      - uses: github/codeql-action/upload-sarif@v3
+        with: { sarif_file: ctxlint.sarif }

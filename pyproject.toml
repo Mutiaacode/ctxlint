@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ctxlint"
+description = "Lint the context your AI agent reads: broken references, duplicated rules, stale files, token cost."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "mutiadev" }]
+keywords = ["agents", "agents.md", "claude.md", "cursor", "skills", "lint", "context"]
+classifiers = [
+  "Environment :: Console",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Software Development :: Quality Assurance",
+]
+# regex-free: version lives in ctxlint.VERSION only
+dynamic = ["version"]
+dependencies = []
+
+[project.scripts]
+ctxlint = "ctxlint:main"
+
+[project.urls]
+Homepage = "https://github.com/Mutiaacode/ctxlint"
+Issues = "https://github.com/Mutiaacode/ctxlint/issues"
+Changelog = "https://github.com/Mutiaacode/ctxlint/blob/master/CHANGELOG.md"
+
+[tool.setuptools]
+py-modules = ["ctxlint"]
+
+[tool.setuptools.dynamic]
+version = { attr = "ctxlint.VERSION" }

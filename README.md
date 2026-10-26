@@ -4,6 +4,12 @@
 
 [English](README.md) · [Bahasa Indonesia](README.id.md)
 
+[![CI](https://github.com/Mutiaacode/ctxlint/actions/workflows/ctxlint.yml/badge.svg)](https://github.com/Mutiaacode/ctxlint/actions/workflows/ctxlint.yml)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://github.com/Mutiaacode/ctxlint/blob/master/pyproject.toml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen)](https://github.com/Mutiaacode/ctxlint/blob/master/.pre-commit-hooks.yaml)
+[![dependencies: none](https://img.shields.io/badge/dependencies-none-lightgrey)](pyproject.toml)
+
 ## In one minute
 
 Before your agent writes any code, it reads instruction files: `AGENTS.md`, `CLAUDE.md`, `.cursor/rules`, `.clinerules`, `SKILL.md`. That is where you tell it "run tests with `npm test`" or "the API lives in `src/api/v2`".
@@ -50,16 +56,34 @@ A linter cannot make the model smarter. It can stop you from feeding it wrong in
 
 ## Install
 
-Not on PyPI yet, so clone it:
+Needs Python 3.10 or newer. Nothing else — no dependencies, no internet, no API key.
 
 ```bash
-git clone https://github.com/Mutiaacode/ctxlint
-pipx install ./ctxlint          # or: uv tool install ./ctxlint
-# no pipx? just run the file:
-python3 ctxlint/ctxlint.py --help
+# one command, isolated environment, no clone
+uv tool install git+https://github.com/Mutiaacode/ctxlint
+pipx install git+https://github.com/Mutiaacode/ctxlint
+
+# or plain pip, inside a venv
+python3 -m pip install git+https://github.com/Mutiaacode/ctxlint
+
+# or skip installing entirely
+python3 ctxlint.py --help
 ```
 
-Needs Python 3.10 or newer. Nothing else. No dependencies, no internet, no API key.
+Verify:
+
+```bash
+ctxlint --version     # ctxlint 0.1.0
+```
+
+### As a pre-commit hook
+
+```yaml
+repos:
+  - repo: https://github.com/Mutiaacode/ctxlint
+    rev: v0.1.0
+    hooks: [{ id: ctxlint }]
+```
 
 ## Usage
 
@@ -110,6 +134,8 @@ Supporting another layout takes one function in `discover()`.
 
 ## CI
 
+Copy [`.github/workflows/ctxlint.yml`](.github/workflows/ctxlint.yml), or start from the short version:
+
 ```yaml
 name: ctxlint
 on: [push, pull_request]
@@ -123,6 +149,8 @@ jobs:
         with: { python-version: "3.12" }
       - run: python3 ctxlint.py --quiet .
 ```
+
+`--format sarif` plus `github/codeql-action/upload-sarif` puts findings in the repo's Security → Code scanning tab instead of only the job log.
 
 ## What you get
 
