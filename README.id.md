@@ -73,7 +73,7 @@ python3 ctxlint.py --help
 Cek hasilnya:
 
 ```bash
-ctxlint --version     # ctxlint 0.1.0
+ctxlint --version     # ctxlint 0.1.1
 ```
 
 ### Sebagai hook pre-commit
@@ -81,7 +81,7 @@ ctxlint --version     # ctxlint 0.1.0
 ```yaml
 repos:
   - repo: https://github.com/Mutiaacode/ctxlint
-    rev: v0.1.0
+    rev: v0.1.1
     hooks: [{ id: ctxlint }]
 ```
 

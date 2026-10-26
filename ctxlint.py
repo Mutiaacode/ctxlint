@@ -16,7 +16,7 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
-VERSION = "0.1.0"
+VERSION = "0.1.1"
 
 # ---------------------------------------------------------------- file discovery
 

@@ -5,6 +5,17 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.1]
+
+### Added
+- Installable package: `uv tool install git+https://github.com/Mutiaacode/ctxlint`.
+- pre-commit hook (`id: ctxlint`).
+- CI matrix on Python 3.10–3.13, console-script install check, SARIF upload to code scanning.
+
+### Fixed
+- `emit_markdown` used a backslash inside an f-string, which is a `SyntaxError` on Python 3.10 and 3.11. The advertised `requires-python` was wrong until now.
+- Absolute paths are printed when the target sits outside the current directory, instead of `../..` chains.
+
 ## [0.1.0]
 
 First working release.
